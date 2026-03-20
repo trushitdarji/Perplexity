@@ -6,7 +6,7 @@ export async function sendMessage(req, res) {
   const { message, chat: chatId } = req.body;
 
   let title = null,
-    chat = null;
+  chat = null;
   if (!chatId) {
     title = await generateTitle(message);
     chat = await chatModel.create({
@@ -83,21 +83,21 @@ export async function deleteChat(req, res) {
   const { chatId } = req.params;
 
   const chat = await chatModel.findOneAndDelete({
-    _id:chatId,
-    user:req.user.id
-  })
+    _id: chatId,
+    user: req.user.id,
+  });
 
   await messageModel.deleteMany({
-    chat:chatId
-  })
+    chat: chatId,
+  });
 
-  if(!chat){
+  if (!chat) {
     return res.status(404).json({
-      message:"Chat not found"
-    })
+      message: "Chat not found",
+    });
   }
 
   res.status(200).json({
-    message:"Chat Deleted successfully"
-  })
+    message: "Chat Deleted successfully",
+  });
 }

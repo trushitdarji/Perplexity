@@ -8,3 +8,30 @@ body {
 body {
   @apply bg-[#05050b] text-white;
 }
+
+/* Theme transition animation - sweep from top-right to bottom-left */
+@keyframes themeTransition {
+  0% {
+    clip-path: circle(0% at 100% 0%);
+  }
+  100% {
+    clip-path: circle(150% at 100% 0%);  }
+}
+
+.theme-transition {
+  animation: themeTransition 0.5s ease-in-out;
+}
+
+/* Smooth color transitions */
+.theme-container {
+  transition:
+    background-color 0.3s ease-in-out,
+    color 0.3s ease-in-out;
+}
+
+.theme-element {
+  transition:
+    background-color 0.3s ease-in-out,
+    border-color 0.3s ease-in-out,
+    color 0.3s ease-in-out;
+}
