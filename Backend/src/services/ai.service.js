@@ -1,6 +1,14 @@
-import { AIMessage, HumanMessage, SystemMessage } from "langchain";
+import {
+  AIMessage,
+  createAgent,
+  HumanMessage,
+  SystemMessage,
+  tool,
+} from "langchain";
 import { ChatGoogle } from "@langchain/google";
 import { ChatMistralAI } from "@langchain/mistralai";
+import * as z from "zod";
+import { searchInternet } from "./internet.service.js";
 
 const geminiModel = new ChatGoogle({
   model: "gemini-2.5-flash",
@@ -12,15 +20,36 @@ const mistralModel = new ChatMistralAI({
   apiKey: process.env.MISTRAL_API_KEY,
 });
 
+const searchInternetTool = tool(searchInternet, {
+  name: "searchInternet",
+  description: "Use this tool to get the latest information from the internet",
+  schema: z.object({
+    query: z.string().describe("The search query to loop on the internet"),
+  }),
+});
+
+const agent = createAgent({
+  model: geminiModel,
+  tools: [searchInternetTool],
+});
+
 export async function generateResponse(messages) {
-  const response = await geminiModel.invoke(messages.map(msg=>{
-    if(msg.role == "user"){
-      return new HumanMessage(msg.content)
-    }else if(msg.role == "ai"){
-      return new AIMessage(msg.content) 
-    }
-  }));
-  return response.text;
+  const response = await agent.invoke({
+    messages: [
+      new SystemMessage(
+        `you are a helpful assistant that provides accurate and concise answers to user queries. You have access to a tool called "searchInternet" that allows you to retrieve the latest information from the internet. When you receive a user query, you can use this tool to gather relevant information before formulating your response. Always ensure that your answers are based on the most up-to-date information available, and provide clear and concise responses to the user's questions.`,
+      ),
+
+      ...messages.map((msg) => {
+        if (msg.role == "user") {
+          return new HumanMessage(msg.content);
+        } else if (msg.role == "ai") {
+          return new AIMessage(msg.content);
+        }
+      }),
+    ],
+  });
+  return response.messages[response.messages.length - 1].text;
 }
 
 export async function generateTitle(message) {
@@ -33,5 +62,5 @@ export async function generateTitle(message) {
       `Genrate a title for a chat conversation based on the following first message: "${message}"`,
     ),
   ]);
-  return response.text
+  return response.text;
 }

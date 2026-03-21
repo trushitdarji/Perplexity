@@ -9,15 +9,15 @@ const chatSlice = createSlice({
     error: null,
   },
   reducers: {
-    // createNewChat: (state, action) => {
-    //   const { chatId, title } = action.payload;
-    //   state.chats[chatId] = {
-    //     id: chatId,
-    //     title,
-    //     messages: [],
-    //     lastUpdated: new Date().toISOString(),
-    //   };
-    // },
+    createNewChat: (state, action) => {
+      const { chatId, title } = action.payload;
+      state.chats[chatId] = {
+        id: chatId,
+        title,
+        messages: [],
+        lastUpdated: new Date().toISOString(),
+      };
+    },
     addNewMessage: (state, action) => {
       const { chatId, content, role } = action.payload;
       state.chats[chatId].messages.push({ content, role,timestamp:new Date().toISOString() });
