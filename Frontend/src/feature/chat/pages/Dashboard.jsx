@@ -18,12 +18,13 @@ const Dashboard = () => {
   const isLoading = useSelector((state) => state.chat.isLoading);
 
   const theme = {
-    base: isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900",
-    panel: isDark ? "bg-slate-900 text-white" : "bg-white text-slate-900",
-    hover: isDark ? "hover:bg-slate-800" : "hover:bg-slate-100",
-    border: isDark ? "border-slate-800" : "border-slate-200",
-    card: isDark ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-900",
-    textMuted: isDark ? "text-slate-400" : "text-slate-500",
+    base: isDark ? "bg-zinc-900 text-white" : "bg-white text-black",
+    panel: isDark ? "bg-zinc-900 text-white" : "bg-white text-black",
+    hover: isDark ? "hover:bg-zinc-800" : "hover:bg-zinc-100",
+    border: isDark ? "border-zinc-800" : "border-zinc-300",
+    card: isDark ? "bg-zinc-800 text-white" : "bg-zinc-100 text-black",
+    textMuted: isDark ? "text-zinc-400" : "text-zinc-500",
+    active: isDark ? "bg-zinc-500" : "bg-zinc-600",
   };
 
   const modeClass = (light, darkValue) => (isDark ? darkValue : light);
@@ -39,7 +40,7 @@ const Dashboard = () => {
     const loadChat = async () => {
       await chat.handleGetChats();
     };
-    loadChat()
+    loadChat();
   }, []);
 
   useEffect(() => {
@@ -80,18 +81,10 @@ const Dashboard = () => {
   return (
     <div
       className={`flex h-screen ${theme.base} theme-container ${themeAnimating ? "theme-transition" : ""}`}
-      style={{
-        backgroundColor: isDark ? "#03071e" : "#ffffff",
-        color: isDark ? "#f8fafc" : "#0f172a",
-      }}
     >
       {/* Sidebar */}
       <aside
-        className={`${isSidebarOpen ? "w-64" : "w-0"} ${theme.panel} border-r ${theme.border} flex flex-col transition-all duration-300 overflow-hidden theme-element`}
-        style={{
-          backgroundColor: isDark ? "#0b1222" : "#ffffff",
-          color: isDark ? "#f8fafc" : "#0f172a",
-        }}
+        className={`${isSidebarOpen ? "w-60" : "w-0"} ${theme.panel} border-r ${theme.border} flex flex-col transition-all duration-300 overflow-hidden`}
       >
         {/* Logo */}
         <div className={`p-5`}>
@@ -103,30 +96,40 @@ const Dashboard = () => {
         </div>
 
         <div
-          className={`h-px ${modeClass("bg-slate-200", "bg-slate-800")}`}
+          className={`h-px ${modeClass("bg-zinc-200", "bg-zinc-800")}`}
         ></div>
 
         {/* Recents */}
         <div className="my-6">
           <p
-            className={`px-4 py-2 text-xs font-semibold ${modeClass("text-slate-500", "text-slate-400")} uppercase`}
+            className={`px-4 py-2 text-xs font-semibold ${modeClass("text-zinc-500", "text-zinc-400")} uppercase`}
           >
             Recents
           </p>
           <div className="space-y-1 mt-2">
-            {Object.values(chats).map((chat) => (
-              <button
-                onClick={() => openChat(chat.id)}
-                key={chat.id}
-                className={`w-full cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg ${modeClass("text-slate-700", "text-slate-400")} ${theme.hover} transition-colors text-left group`}
-              >
-                <span>📝</span>
-                <span className="text-sm truncate flex-1">{chat.title}</span>
-                <span className="opacity-0 group-hover:opacity-100 text-slate-400">
-                  ⋯
-                </span>
-              </button>
-            ))}
+            {Object.values(chats).map((chat) => {
+              const isActive = chat.id === currentChatId;
+              return (
+                <button
+                  onClick={() => openChat(chat.id)}
+                  key={chat.id}
+                  className={`w-full cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-left group     ${
+                    isActive
+                      ? modeClass(
+                          "bg-zinc-100 text-black",
+                          "bg-zinc-800 text-white",
+                        )
+                      : `${modeClass("text-zinc-700", "text-zinc-400")} ${theme.hover}`
+                  }`}
+                >
+                  <span>📝</span>
+                  <span className="text-sm truncate flex-1">{chat.title}</span>
+                  <span className="opacity-0 group-hover:opacity-100 text-slate-400">
+                    ⋯
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -137,7 +140,7 @@ const Dashboard = () => {
           <div
             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors  ${theme.hover}`}
           >
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+            <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white text-sm font-bold">
               {user?.name?.[0]?.toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
@@ -157,16 +160,10 @@ const Dashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <div
-        className={`flex-1 flex flex-col ${theme.panel} theme-element`}
-        style={{
-          backgroundColor: isDark ? "#03071e" : "#ffffff",
-          color: isDark ? "#f8fafc" : "#0f172a",
-        }}
-      >
+      <div className={`flex-1 flex flex-col ${theme.panel} theme-element`}>
         {/* Header */}
         <header
-          className={` ${theme.border} px-6 py-4 flex items-center justify-between theme-element`}
+          className={`border-b ${theme.border} px-6 py-4 flex items-center justify-between theme-element`}
         >
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -217,19 +214,19 @@ const Dashboard = () => {
         </header>
 
         {/* Chat Area */}
-        <div className="chat-area w-3/4 flex-1 overflow-y-auto m-auto p-6 space-y-6 ">
+        <div className="chat-area w-4/6 flex-1 overflow-y-auto m-auto p-6 space-y-">
           {!chats[currentChatId]?.messages?.length ? (
             // Empty State
             <div className="h-full flex flex-col items-center justify-center text-center">
               <div className="mb-8">
                 <div className="text-6xl mb-4">✨</div>
                 <h2
-                  className={`text-3xl font-bold ${modeClass("text-slate-900", "text-white")} mb-4`}
+                  className={`text-3xl font-bold ${modeClass("text-zinc-900", "text-white")} mb-4`}
                 >
                   Hey there, {user?.name?.split(" ")[0] || "friend"}
                 </h2>
                 <p
-                  className={`${modeClass("text-slate-600", "text-slate-400")} mb-8`}
+                  className={`${modeClass("text-zinc-600", "text-zinc-400")} mb-8`}
                 >
                   Start a conversation, ask questions, or let me help you with
                   anything.
@@ -240,7 +237,7 @@ const Dashboard = () => {
                   {suggestedPrompts.map((prompt, idx) => (
                     <button
                       key={idx}
-                      className={`p-4 rounded-lg border ${modeClass("border-slate-200", "border-slate-800")} ${theme.hover} ${modeClass("bg-slate-50", "bg-slate-900")} transition-all text-left`}
+                      className={`p-4 rounded-lg border ${modeClass("border-slate-200", "border-zinc-800")} ${theme.hover} ${modeClass("bg-slate-50", "bg-zinc-900")} transition-all text-left`}
                       onClick={() =>
                         setInputValue(
                           `Tell me about ${prompt.title.toLowerCase()}`,
@@ -265,7 +262,7 @@ const Dashboard = () => {
 
               {/* Plan Banner */}
               <div
-                className={`mt-12 p-4 ${modeClass("bg-slate-100", "bg-slate-900")} rounded-lg border ${modeClass("border-slate-200", "border-slate-800")}`}
+                className={`mt-12 p-4 ${modeClass("bg-slate-100", "bg-zinc-900")} rounded-lg border ${modeClass("border-slate-200", "border-zinc-800")}`}
               >
                 <p
                   className={`text-sm ${modeClass("text-slate-600", "text-slate-400")}`}
@@ -287,8 +284,8 @@ const Dashboard = () => {
                     className={`max-w-2xl rounded-lg p-4 ${
                       msg.role === "user"
                         ? modeClass(
-                            "bg-orange-500 text-white",
-                            "bg-orange-500 text-white",
+                            "bg-zinc-100 text-black",
+                            "bg-zinc-800 text-white",
                           )
                         : modeClass(
                             "bg-trnsperent text-slate-900",
@@ -319,8 +316,8 @@ const Dashboard = () => {
                               <code
                                 className={`px-1.5 py-0.5 rounded ${
                                   msg.role === "user"
-                                    ? "bg-blue-500 bg-opacity-50"
-                                    : modeClass("bg-slate-200", "bg-slate-700")
+                                    ? "bg-zinc-500 bg-opacity-50"
+                                    : modeClass("bg-slate-200", "bg-zinc-700")
                                 }`}
                                 {...props}
                               />
@@ -328,8 +325,8 @@ const Dashboard = () => {
                               <code
                                 className={`block p-2 rounded mb-2 overflow-x-auto ${
                                   msg.role === "user"
-                                    ? "bg-blue-500 bg-opacity-50"
-                                    : modeClass("bg-slate-200", "bg-slate-700")
+                                    ? "bg-zinc-500 bg-opacity-50"
+                                    : modeClass("bg-zinc-200", "bg-zinc-700")
                                 }`}
                                 {...props}
                               />
@@ -417,8 +414,8 @@ const Dashboard = () => {
                     <p
                       className={`text-xs mt-2 ${
                         msg.role === "user"
-                          ? "text-blue-100"
-                          : modeClass("text-slate-500", "text-slate-400")
+                          ? modeClass("text-black", "text-zinc-100")
+                          : modeClass("text-zinc-500", "text-zinc-400")
                       }`}
                     >
                       {new Date(msg.timestamp).toLocaleTimeString([], {
@@ -459,7 +456,7 @@ const Dashboard = () => {
         <div
           className={` ${modeClass("border-slate-200", "border-slate-800")} ${modeClass("bg-white", "")} p-6`}
         >
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="relative flex items-end gap-3">
               <textarea
                 value={inputValue}
@@ -467,12 +464,12 @@ const Dashboard = () => {
                 onKeyPress={handleKeyPress}
                 placeholder="How can I help you today?"
                 rows="1"
-                className={`flex-1 px-4 py-3 rounded-lg border ${modeClass("border-slate-300", "border-slate-700")} ${modeClass("bg-slate-50", "bg-slate-900")} ${modeClass("text-slate-900", "text-white")} ${modeClass("placeholder-slate-500", "placeholder-slate-400")} focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none`}
+                className={`flex-1 px-4 py-3 rounded-lg border ${modeClass("border-slate-300", "border-zinc-700")} ${modeClass("bg-slate-50", "bg-zinc-900")} ${modeClass("text-slate-900", "text-white")} ${modeClass("placeholder-slate-500", "placeholder-slate-400")} focus:outline-none focus:ring- focus:ring-zinc-500 resize-none`}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim()}
-                className={`p-3 ${modeClass("bg-blue-600", "bg-blue-700")} text-white rounded-lg ${modeClass("hover:bg-blue-700", "hover:bg-blue-800")} disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+                className={`p-3.5 m-auto ${modeClass("bg-orange-600", "bg-orange-600")} text-white rounded-lg ${modeClass("hover:bg-orange-700", "hover:bg-orange-800")} disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
                 title="Send message"
               >
                 <svg
@@ -486,7 +483,7 @@ const Dashboard = () => {
             </div>
 
             <p
-              className={`text-xs ${modeClass("text-slate-500", "text-slate-400")} mt-3 text-center`}
+              className={`text-xs ${modeClass("text-black", "text-zinc-300")} mt-3 text-center`}
             >
               Free plan • Responses may vary
             </p>
