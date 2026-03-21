@@ -1,20 +1,21 @@
 import { useSelector } from "react-redux";
 import { useChat } from "../hooks/useChat";
 import { useEffect, useState, useRef } from "react";
-import { initializeSocketConnection } from "../service/chat.socket";
+import ReactMarkdown from "react-markdown";
 
 const Dashboard = () => {
   const [isDark, setIsDark] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [activeChat, setActiveChat] = useState(null);
   const [themeAnimating, setThemeAnimating] = useState(false);
   const messagesEndRef = useRef(null);
 
   const chat = useChat();
+
   const user = useSelector((state) => state.auth);
+  const chats = useSelector((state) => state.chat.chats);
+  const currentChatId = useSelector((state) => state.chat.currentChatId);
+  const isLoading = useSelector((state) => state.chat.isLoading);
 
   const theme = {
     base: isDark ? "bg-slate-950 text-white" : "bg-white text-slate-900",
@@ -35,37 +36,27 @@ const Dashboard = () => {
 
   useEffect(() => {
     chat.initializeSocketConnection();
-  }, [isDark]);
+    const loadChat = async () => {
+      await chat.handleGetChats();
+    };
+    loadChat()
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [chats, currentChatId]);
 
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+    const trimmedMessage = inputValue.trim();
 
-    const newMessage = {
-      id: Date.now(),
-      content: inputValue,
-      sender: "user",
-      timestamp: new Date(),
-    };
+    if (!trimmedMessage) return;
 
-    setMessages([...messages, newMessage]);
+    chat.handleSendMessage({
+      message: trimmedMessage,
+      chatId: currentChatId,
+    });
+
     setInputValue("");
-    setIsLoading(true);
-
-    setTimeout(() => {
-      const aiMessage = {
-        id: Date.now() + 1,
-        content:
-          "This is a simulated AI response. Connect this to your backend for real functionality.",
-        sender: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsLoading(false);
-    }, 1000);
   };
 
   const handleKeyPress = (e) => {
@@ -75,18 +66,15 @@ const Dashboard = () => {
     }
   };
 
+  const openChat = (chatId) => {
+    chat.handleOpenChat(chatId);
+  };
+
   const suggestedPrompts = [
     { title: "Code", description: "Ask for code", icon: "</>" },
     { title: "Learn", description: "Learn something new", icon: "📚" },
     { title: "Write", description: "Writing assistance", icon: "✍️" },
     { title: "Analyze", description: "Data analysis", icon: "📊" },
-  ];
-
-  const recentChats = [
-    "Online internship interview prepa...",
-    "Frontend-backend integration aur...",
-    "Fullstack development schedule...",
-    "Script Of TrushitCodes",
   ];
 
   return (
@@ -106,7 +94,7 @@ const Dashboard = () => {
         }}
       >
         {/* Logo */}
-        <div className={`p-5 border-b ${theme.border}`}>
+        <div className={`p-5`}>
           <h1
             className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
           >
@@ -126,14 +114,14 @@ const Dashboard = () => {
             Recents
           </p>
           <div className="space-y-1 mt-2">
-            {recentChats.map((chatName, idx) => (
+            {Object.values(chats).map((chat) => (
               <button
-                key={idx}
-                onClick={() => setActiveChat(idx)}
-                className={`w-full flex items-center gap-2 px-4 py-2 rounded-lg ${modeClass("text-slate-700", "text-slate-400")} ${theme.hover} transition-colors text-left group`}
+                onClick={() => openChat(chat.id)}
+                key={chat.id}
+                className={`w-full cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg ${modeClass("text-slate-700", "text-slate-400")} ${theme.hover} transition-colors text-left group`}
               >
                 <span>📝</span>
-                <span className="text-sm truncate flex-1">{chatName}</span>
+                <span className="text-sm truncate flex-1">{chat.title}</span>
                 <span className="opacity-0 group-hover:opacity-100 text-slate-400">
                   ⋯
                 </span>
@@ -178,7 +166,7 @@ const Dashboard = () => {
       >
         {/* Header */}
         <header
-          className={`border-b ${theme.border} px-6 py-4 flex items-center justify-between theme-element`}
+          className={` ${theme.border} px-6 py-4 flex items-center justify-between theme-element`}
         >
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -229,8 +217,8 @@ const Dashboard = () => {
         </header>
 
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 ? (
+        <div className="chat-area w-3/4 flex-1 overflow-y-auto m-auto p-6 space-y-6 ">
+          {!chats[currentChatId]?.messages?.length ? (
             // Empty State
             <div className="h-full flex flex-col items-center justify-center text-center">
               <div className="mb-8">
@@ -241,7 +229,7 @@ const Dashboard = () => {
                   Hey there, {user?.name?.split(" ")[0] || "friend"}
                 </h2>
                 <p
-                  className={`${modeClass("text-slate-600", "text-slate-400")} mb-8 max-w-md`}
+                  className={`${modeClass("text-slate-600", "text-slate-400")} mb-8`}
                 >
                   Start a conversation, ask questions, or let me help you with
                   anything.
@@ -290,33 +278,150 @@ const Dashboard = () => {
           ) : (
             // Messages
             <>
-              {messages.map((msg) => (
+              {chats[currentChatId]?.messages.map((msg, idx) => (
                 <div
-                  key={msg.id}
-                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
                     className={`max-w-2xl rounded-lg p-4 ${
-                      msg.sender === "user"
+                      msg.role === "user"
                         ? modeClass(
-                            "bg-blue-600 text-white",
-                            "bg-blue-700 text-white",
+                            "bg-orange-500 text-white",
+                            "bg-orange-500 text-white",
                           )
                         : modeClass(
-                            "bg-slate-100 text-slate-900",
-                            "bg-slate-800 text-white",
+                            "bg-trnsperent text-slate-900",
+                            "bg-trnsperent text-white",
                           )
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{msg.content}</p>
+                    <div className="text-sm leading-relaxed prose dark:prose-invert prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          p: ({ node, ...props }) => (
+                            <p className="mb-2 last:mb-0" {...props} />
+                          ),
+                          ul: ({ node, ...props }) => (
+                            <ul
+                              className="list-disc list-inside mb-2"
+                              {...props}
+                            />
+                          ),
+                          ol: ({ node, ...props }) => (
+                            <ol
+                              className="list-decimal list-inside mb-2"
+                              {...props}
+                            />
+                          ),
+                          code: ({ node, inline, ...props }) =>
+                            inline ? (
+                              <code
+                                className={`px-1.5 py-0.5 rounded ${
+                                  msg.role === "user"
+                                    ? "bg-blue-500 bg-opacity-50"
+                                    : modeClass("bg-slate-200", "bg-slate-700")
+                                }`}
+                                {...props}
+                              />
+                            ) : (
+                              <code
+                                className={`block p-2 rounded mb-2 overflow-x-auto ${
+                                  msg.role === "user"
+                                    ? "bg-blue-500 bg-opacity-50"
+                                    : modeClass("bg-slate-200", "bg-slate-700")
+                                }`}
+                                {...props}
+                              />
+                            ),
+                          pre: ({ node, ...props }) => (
+                            <pre className="mb-2" {...props} />
+                          ),
+                          blockquote: ({ node, ...props }) => (
+                            <blockquote
+                              className={`border-l-4 pl-3 py-1 mb-2 ${
+                                msg.role === "user"
+                                  ? "border-blue-400"
+                                  : modeClass(
+                                      "border-slate-300",
+                                      "border-slate-600",
+                                    )
+                              }`}
+                              {...props}
+                            />
+                          ),
+                          a: ({ node, ...props }) => (
+                            <a
+                              className="underline hover:opacity-80 break-words"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              {...props}
+                            />
+                          ),
+                          h1: ({ node, ...props }) => (
+                            <h1
+                              className="text-lg font-bold mb-2 mt-2"
+                              {...props}
+                            />
+                          ),
+                          h2: ({ node, ...props }) => (
+                            <h2
+                              className="text-base font-bold mb-2 mt-2"
+                              {...props}
+                            />
+                          ),
+                          h3: ({ node, ...props }) => (
+                            <h3 className="font-bold mb-1 mt-1" {...props} />
+                          ),
+                          table: ({ node, ...props }) => (
+                            <table
+                              className={`border-collapse border mb-2 text-xs ${
+                                msg.role === "user"
+                                  ? "border-blue-400"
+                                  : modeClass(
+                                      "border-slate-300",
+                                      "border-slate-600",
+                                    )
+                              }`}
+                              {...props}
+                            />
+                          ),
+                          th: ({ node, ...props }) => (
+                            <th
+                              className={`border p-1 ${
+                                msg.role === "user"
+                                  ? "bg-blue-500 bg-opacity-50"
+                                  : modeClass("bg-slate-200", "bg-slate-700")
+                              }`}
+                              {...props}
+                            />
+                          ),
+                          td: ({ node, ...props }) => (
+                            <td
+                              className={`border p-1 ${
+                                msg.role === "user"
+                                  ? "border-blue-400"
+                                  : modeClass(
+                                      "border-slate-300",
+                                      "border-slate-600",
+                                    )
+                              }`}
+                              {...props}
+                            />
+                          ),
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
                     <p
                       className={`text-xs mt-2 ${
-                        msg.sender === "user"
+                        msg.role === "user"
                           ? "text-blue-100"
                           : modeClass("text-slate-500", "text-slate-400")
                       }`}
                     >
-                      {msg.timestamp.toLocaleTimeString([], {
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
@@ -352,7 +457,7 @@ const Dashboard = () => {
 
         {/* Input Area */}
         <div
-          className={`border-t ${modeClass("border-slate-200", "border-slate-800")} ${modeClass("bg-white", "bg-slate-950")} p-6`}
+          className={` ${modeClass("border-slate-200", "border-slate-800")} ${modeClass("bg-white", "")} p-6`}
         >
           <div className="max-w-4xl mx-auto">
             <div className="relative flex items-end gap-3">
@@ -366,7 +471,7 @@ const Dashboard = () => {
               />
               <button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
+                disabled={!inputValue.trim()}
                 className={`p-3 ${modeClass("bg-blue-600", "bg-blue-700")} text-white rounded-lg ${modeClass("hover:bg-blue-700", "hover:bg-blue-800")} disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
                 title="Send message"
               >

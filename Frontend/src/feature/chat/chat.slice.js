@@ -1,28 +1,48 @@
-import { createSlice, current } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 const chatSlice = createSlice({
-    name:"chat",
-    initialState:{
-        chats:{},
-        isLoading:false,
-        currentChatId:null,
-        error:null
+  name: "chat",
+  initialState: {
+    chats: {},
+    isLoading: false,
+    currentChatId: null,
+    error: null,
+  },
+  reducers: {
+    // createNewChat: (state, action) => {
+    //   const { chatId, title } = action.payload;
+    //   state.chats[chatId] = {
+    //     id: chatId,
+    //     title,
+    //     messages: [],
+    //     lastUpdated: new Date().toISOString(),
+    //   };
+    // },
+    addNewMessage: (state, action) => {
+      const { chatId, content, role } = action.payload;
+      state.chats[chatId].messages.push({ content, role,timestamp:new Date().toISOString() });
+      
     },
-    reducers:{
-        setChats:(state,action)=>{
-            state.chats = action.payload
-        },
-        setLoading:(state,action)=>{
-            state.isLoading = action.payload 
-        },
-        setCrrentChatId:(state,action)=>{
-            state.currentChatId = action.payload
-        },
-        setError:(state,action)=>{
-            state.error = action.payload
-        }
-    }
-})
+    addMessages:(state,action)=>{
+      const {chatId,messages} = action.payload
+      state.chats[chatId].messages.push(...messages)
+    },
 
-export const {setChats,setCrrentChatId,setError,setLoading} = chatSlice.action
-export default chatSlice.reducer
+    setChats: (state, action) => {
+      state.chats = action.payload;
+    },
+    setLoading: (state, action) => {
+      state.isLoading = action.payload;
+    },
+    setCurrentChatId: (state, action) => {
+      state.currentChatId = action.payload;
+    },
+    setError: (state, action) => {
+      state.error = action.payload;
+    },
+  },
+});
+
+export const { setChats, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } =
+  chatSlice.actions;
+export default chatSlice.reducer;
