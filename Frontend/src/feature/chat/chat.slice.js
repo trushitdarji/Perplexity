@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { act } from "react";
 
 const chatSlice = createSlice({
   name: "chat",
@@ -20,12 +21,43 @@ const chatSlice = createSlice({
     },
     addNewMessage: (state, action) => {
       const { chatId, content, role } = action.payload;
-      state.chats[chatId].messages.push({ content, role,timestamp:new Date().toISOString() });
-      
+      state.chats[chatId].messages.push({
+        content,
+        role,
+        timestamp: new Date().toISOString(),
+      });
     },
-    addMessages:(state,action)=>{
-      const {chatId,messages} = action.payload
-      state.chats[chatId].messages.push(...messages)
+    addMessages: (state, action) => {
+      const { chatId, messages } = action.payload;
+      state.chats[chatId].messages.push(...messages);
+    },
+
+    updateLastMessage: (state, action) => {
+      const { content, chatId } = action.payload;
+
+      const messages = state.chats[chatId].messages;
+      if (!messages || messages.length === 0) return;
+
+      const lastMsg = messages[messages.length - 1];
+      lastMsg.content = content;
+    },
+
+    replaceChatId: (state, action) => {
+      const { oldId, newId } = action.payload;
+
+      if (!state.chats[oldId]) return;
+
+      state.chats[newId] = state.chats[oldId];
+      state.chats[newId].id = newId;
+
+      delete state.chats[oldId];
+    },
+
+    updateChatTitle: (state, action) => {
+      const { chatId, title } = action.payload;
+      if(!state.chats[chatId]) return
+
+      state.chats[chatId].title = title
     },
 
     setChats: (state, action) => {
@@ -43,6 +75,16 @@ const chatSlice = createSlice({
   },
 });
 
-export const { setChats, setCurrentChatId, setError, setLoading, createNewChat, addNewMessage, addMessages } =
-  chatSlice.actions;
+export const {
+  setChats,
+  setCurrentChatId,
+  setError,
+  setLoading,
+  createNewChat,
+  addNewMessage,
+  addMessages,
+  updateLastMessage,
+  replaceChatId,
+  updateChatTitle
+} = chatSlice.actions;
 export default chatSlice.reducer;

@@ -14,6 +14,9 @@ import {
   createNewChat,
   addNewMessage,
   addMessages,
+  updateLastMessage,
+  replaceChatId,
+  updateChatTitle,
 } from "../chat.slice";
 import { useDispatch } from "react-redux";
 
@@ -23,33 +26,77 @@ export const useChat = () => {
 
   async function handleSendMessage({ message, chatId }) {
     dispatch(setLoading(true));
-    const data = await sendMessage({ message, chatId });
-    const { chat, aiMessage } = data;
+
     if (!chatId) {
+      const tempId = Date.now().toString();
+
       dispatch(
         createNewChat({
-          chatId: chatId || chat._id,
-          title: chat.title,
+          chatId: tempId,
+          title: "new chat",
         }),
       );
+      dispatch(setCurrentChatId(tempId));
+      chatId = tempId;
     }
 
-    dispatch(setCurrentChatId(chatId || chat._id));
-
+    // user message show karne k liye
     dispatch(
       addNewMessage({
-        chatId: chatId || chat._id,
+        chatId,
         content: message,
         role: "user",
       }),
     );
+
+    // typing indecator show
     dispatch(
       addNewMessage({
-        chatId: chatId || chat._id,
-        content: aiMessage.content,
-        role: aiMessage.role,
+        chatId,
+        content: "",
+        role: "ai",
       }),
     );
+
+    try {
+      const data = await sendMessage({
+        message,
+        chatId: chatId && chats[chatId] ? chatId : null,
+      });
+
+      const { chat, aiMessage } = data;
+
+      if (chat && chat._id && chatId !== chat._id) {
+        dispatch(
+          replaceChatId({
+            oldId: chatId,
+            newId: chat._id,
+          }),
+        );
+
+        dispatch(setCurrentChatId(chat._id));
+        chatId = chat._id;
+      }
+
+      if (chat && chat._id) {
+        dispatch(
+          updateChatTitle({
+            chatId: chat._id,
+            title: chat.title,
+          }),
+        );
+      }
+
+      dispatch(
+        updateLastMessage({
+          chatId,
+          content: aiMessage.content,
+        }),
+      );
+    } catch (err) {
+      dispatch(setError("failed to send message"));
+    }
+
     dispatch(setLoading(false));
   }
 
