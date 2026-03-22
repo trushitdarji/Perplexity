@@ -34,7 +34,7 @@ export const useChat = () => {
       );
     }
 
-    dispatch(setCurrentChatId(chatId||chat._id));
+    dispatch(setCurrentChatId(chatId || chat._id));
 
     dispatch(
       addNewMessage({

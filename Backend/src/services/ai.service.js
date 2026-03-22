@@ -39,7 +39,6 @@ export async function generateResponse(messages) {
       new SystemMessage(
         `you are a helpful assistant that provides accurate and concise answers to user queries. You have access to a tool called "searchInternet" that allows you to retrieve the latest information from the internet. When you receive a user query, you can use this tool to gather relevant information before formulating your response. Always ensure that your answers are based on the most up-to-date information available, and provide clear and concise responses to the user's questions.`,
       ),
-
       ...messages.map((msg) => {
         if (msg.role == "user") {
           return new HumanMessage(msg.content);
